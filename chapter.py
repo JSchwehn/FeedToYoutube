@@ -18,7 +18,6 @@ class Chapter:
 
     @property
     def title(self):
-
         return self.title
 
     @title.setter
