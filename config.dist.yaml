@@ -1,0 +1,11 @@
+# Database:
+db-name: feed_test.db
+
+# Feed
+feed : http://re-talk.de/feed/mp3/
+
+# Video
+video-height: 1080
+video-width: 1920
+video-fps: 60
+
