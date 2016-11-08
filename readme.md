@@ -1,5 +1,5 @@
-# Podcast to Youtube 
-
+# Podcast RSS Feed to Youtube
+ 
 This is not even in a alpha state. 
 
 ##Progress
