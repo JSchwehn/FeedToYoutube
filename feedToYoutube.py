@@ -5,7 +5,7 @@ def get_rss():
     pass
 
 def main():
-    RssVideoCreator()
+    RssVideoCreator().run()
 
 if __name__ == '__main__':
     main()

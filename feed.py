@@ -1,10 +1,19 @@
 class Feed:
-    def __init__(self, feed_id="",etag="",subtitle="", title="", updated=None):
+    def __init__(self, url, feed_id="", etag="", subtitle="", title="", updated=None):
+        self.url = url
         self.etag = etag
         self.title = title
         self.updated = updated
         self.subtitle = subtitle
         self.feed_id = feed_id
+
+    @property
+    def url(self):
+        return self.url
+
+    @url.setter
+    def url(self, value):
+        self.url = value
 
     @property
     def feed_id(self):
