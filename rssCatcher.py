@@ -11,6 +11,7 @@ class RssCatcher:
     db = None
     table_feed = "feeds"
     table_episodes = "episodes"
+    table_chapters = "chapters"
     config = None
     feed = None
     feed_url = None
@@ -23,14 +24,21 @@ class RssCatcher:
         self.feed_url = feedUrl
         print "Loading RSS Feed: " + self.feed_url
         f = feedparser.parse(self.feed_url)
-        if not self._feed_has_changed(f.etag):
+        if not hasattr(f, "etag"):
+            etag = f.feed.updated
+        else:
+            etag = f.etag
+        if not self._feed_has_changed(etag):
             print "Nothing has changed"
             return {'status': "304", "message": "Not Modified"}
         if not hasattr(f.feed, "updated"):
             f.feed.updated = unicode(datetime.datetime.now())
-
+        imageUrl = ""
+        if hasattr(f.feed, 'image') and hasattr(f.feed.image, "href"):
+            imageUrl = f.feed.image.href
         feed = Feed(feedUrl,
-                    etag=f.etag,
+                    image=imageUrl,
+                    etag=etag,
                     subtitle=f.feed.summary,
                     title=f.feed.title,
                     updated=f.feed.updated)
@@ -47,11 +55,23 @@ class RssCatcher:
             cs = []
             if hasattr(episode, "psc_chapters"):
                 for chapter in episode.psc_chapters.chapters:
-                    c = Chapter(timestamp=chapter.start,
-                                separator=" ",
-                                title=chapter.title)
-                    cs.append(c)
+                    link = ""
+                    image = ""
+                    if hasattr(chapter, 'href'):
+                        link = chapter.href
+                    if hasattr(chapter, 'image'):
+                        image = chapter.image
 
+                    c = Chapter(
+                        start=chapter.start,
+                        image=image,
+                        href=link,
+                        title=chapter.title)
+                    print "\t" + c.start + ": " + c.title + " Image= " + c.image + " Href= " + c.href
+                    cs.append(c)
+            image = ""
+            if hasattr(episode, 'image') and hasattr(episode.image, "href"):
+                image = episode.image.href
             e = Episode(feed_id=feed.feed_id,
                         rss_episode_id=episode.id,
                         duration=episode.itunes_duration,
@@ -60,7 +80,8 @@ class RssCatcher:
                         subtitle=episode.subtitle,
                         description=episode.summary,
                         published=episode.published,
-                        chapters=cs
+                        chapters=cs,
+                        image=image
                         )
             self._insert_episode(e)
             if hasattr(feed.episodes, 'append'):
@@ -83,11 +104,16 @@ class RssCatcher:
         if feed.feed_id == "" or feed.feed_id is None:
             return self._insert_feed(feed)
 
-    def _insert_episode(self, episode):
-        chapter = ""
-        for c in episode.chapters:
-            chapter += c.toString() + "\n"
+    def _insert_feed(self, feed):
+        sql = "INSERT INTO " + self.table_feed + \
+              " (url, etag, title, subtitle, image, updated)" + \
+              " VALUES (?, ?, ?, ?, ?, ?)"
+        cur = self.db.cursor()
+        cur.execute(sql, [feed.url, feed.etag, feed.title, feed.subtitle, str(feed.image), feed.updated])
+        feed.feed_id = cur.lastrowid
+        self.db.commit()
 
+    def _insert_episode(self, episode):
         sql = "INSERT INTO " + self.table_episodes + " (rss_feed_id, " \
                                                      "rss_episode_id, " \
                                                      "duration, " \
@@ -96,28 +122,25 @@ class RssCatcher:
                                                      "subtitle, " \
                                                      "link, " \
                                                      "published, " \
-                                                     "chapters" \
+                                                     "image " \
                                                      ") VALUES (?,?,?,?,?,?,?,?,?)"
         cur = self.db.cursor()
-        cur.execute(sql, [episode.feed_id, episode.rss_episode_id,
-                          episode.duration, episode.title,
-                          episode.description, episode.subtitle,
-                          episode.link, episode.published,
-                          chapter
-                          ])
+        cur.execute(sql, [episode.feed_id, episode.rss_episode_id, episode.duration, episode.title, episode.description,
+                          episode.subtitle, episode.link, episode.published, episode.image])
+        episode.episode_id = cur.lastrowid
+        self.db.commit()
+        self._insert_chapters(episode)
+
+    def _insert_chapters(self, episode):
+        sql = "INSERT INTO " + self.table_chapters + \
+              "(episode_id,start, title, image, href) VALUES (?,?,?,?,?)"
+        cur = self.db.cursor()
+        for chapter in episode.chapters:
+            cur.execute(sql, [episode.episode_id, chapter.start, chapter.title, chapter.image, chapter.href])
         self.db.commit()
 
     def _update_episode(self, episode):
         sql = "UPDATE"
-
-    def _insert_feed(self, feed):
-        sql = "INSERT INTO " + self.table_feed + \
-              " (url, etag, title, subtitle, updated)" + \
-              " VALUES (?, ?, ?, ?, ?)"
-        cur = self.db.cursor()
-        cur.execute(sql, [feed.url, feed.etag, feed.title, feed.subtitle, feed.updated])
-        self.db.commit()
-        feed.feed_id = cur.lastrowid
 
     def _update_feed(self, feed):
         if feed.id == "" or feed.id is None:
@@ -130,11 +153,13 @@ class RssCatcher:
               'url VARCHAR UNIQUE, ' \
               'etag VARCHAR, ' \
               'title VARCHAR,  ' \
+              'image BLOB,  ' \
               'subtitle VARCHAR,  ' \
               'updated DATE);'
         cur = self.db.cursor()
         cur.execute(sql)
         cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS `etag_idx` ON `" + self.table_feed + "` (`etag` )")
+        cur.execute("CREATE INDEX IF NOT EXISTS `id_idx` ON `" + self.table_feed + "` (`id` )")
         sql = 'CREATE TABLE IF NOT EXISTS ' + self.table_episodes + \
               ' ( id INTEGER PRIMARY KEY AUTOINCREMENT,  ' \
               'rss_feed_id VARCHAR, ' \
@@ -142,9 +167,24 @@ class RssCatcher:
               'title VARCHAR, ' \
               'subtitle VARCHAR, ' \
               'description BLOB, ' \
+              'image BLOB, ' \
               'duration VARCHAR, link VARCHAR, chapters TEXT ,' \
               'published DATE, ' \
               'youtube_upload_date DATE);'
+        cur.execute(sql)
+        sql = """
+        CREATE TABLE IF NOT EXISTS `chapters` (
+            `id` INTEGER NOT NULL,
+            `episode_id` INTEGER NOT NULL,
+            `title` TEXT,
+            `start`	TEXT,
+            `image`	BLOB,
+            `href` TEXT,
+            PRIMARY KEY(`id`)
+        );
+        """
+        cur.execute(sql)
+        sql = "CREATE INDEX IF NOT EXISTS `eid_idx` ON `chapters` (`episode_id` );"
         cur.execute(sql)
 
     def _feed_has_changed(self, etag):

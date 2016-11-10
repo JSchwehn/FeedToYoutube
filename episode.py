@@ -50,13 +50,7 @@ class Episode:
 
     @property
     def chapters(self):
-        retVal = ""
-        if not isinstance(self.chapters, list):
-            return ""
-        for chapter in self.chapters:
-            if not isinstance(chapter, Chapter):
-                continue
-            retVal += chapter.toString() + "\n"
+        return self.chapters
 
     @chapters.setter
     def chapters(self, value):
@@ -94,6 +88,14 @@ class Episode:
     def published(self, value):
         self.published = value
 
+        @property
+        def image(self):
+            return self.image
+
+        @image.setter
+        def image(self, value):
+            self.image = value
+
     def __init__(self,
                  episode_id=None,
                  feed_id="",
@@ -104,6 +106,7 @@ class Episode:
                  published="",
                  duration="",
                  link="",
+                 image="",
                  chapters=[]):
         self.episode_id = episode_id,
         self.feed_id = feed_id
@@ -115,6 +118,7 @@ class Episode:
         self.description = description
         self.published = published
         self.chapters = chapters
+        self.image = image
 
     def add_chapter(self, chapter):
         self.chapters.append(chapter)
