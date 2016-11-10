@@ -28,7 +28,7 @@ class RssCatcher:
             if hasattr(f.feed, "updated"):
                 etag = f.feed.updated
             else:
-                etag = ""
+                raise LookupError('Can\'t find any update indicator. please contact the author. github-co ')
         else:
             etag = f.etag
         if not self._feed_has_changed(etag):
@@ -73,11 +73,14 @@ class RssCatcher:
                     print "\t" + c.start + ": " + c.title + " Image= " + c.image + " Href= " + c.href
                     cs.append(c)
             image = ""
+            duration = "";
             if hasattr(episode, 'image') and hasattr(episode.image, "href"):
                 image = episode.image.href
+            if hasattr(episode, 'itunes_duration'):
+                duration = episode.itunes_duration
             e = Episode(feed_id=feed.feed_id,
                         rss_episode_id=episode.id,
-                        duration=episode.itunes_duration,
+                        duration=duration,
                         link=episode.link,
                         title=episode.title,
                         subtitle=episode.subtitle,
@@ -204,6 +207,6 @@ class RssCatcher:
         cur.execute("SELECT rss_episode_id FROM " + self.table_episodes + " WHERE rss_episode_id = ?", [episode_id])
         data = cur.fetchall()
         if len(data) > 0:
-            return False
-        else:
             return True
+        else:
+            return False
