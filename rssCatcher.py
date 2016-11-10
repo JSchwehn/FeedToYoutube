@@ -25,7 +25,10 @@ class RssCatcher:
         print "Loading RSS Feed: " + self.feed_url
         f = feedparser.parse(self.feed_url)
         if not hasattr(f, "etag"):
-            etag = f.feed.updated
+            if hasattr(f.feed, "updated"):
+                etag = f.feed.updated
+            else:
+                etag = ""
         else:
             etag = f.etag
         if not self._feed_has_changed(etag):
@@ -48,7 +51,7 @@ class RssCatcher:
         print "Importing " + feed.title
         for episode in f.entries:
             print " Episode " + episode.title
-            if self._is_known_episode(episode):
+            if self._is_known_episode(episode.id):
                 continue
 
             # chapter handling
@@ -105,7 +108,7 @@ class RssCatcher:
             return self._insert_feed(feed)
 
     def _insert_feed(self, feed):
-        sql = "INSERT INTO " + self.table_feed + \
+        sql = "INSERT OR IGNORE INTO " + self.table_feed + \
               " (url, etag, title, subtitle, image, updated)" + \
               " VALUES (?, ?, ?, ?, ?, ?)"
         cur = self.db.cursor()
@@ -196,5 +199,11 @@ class RssCatcher:
         else:
             return True
 
-    def _is_known_episode(self, episode):
-        return False
+    def _is_known_episode(self, episode_id):
+        cur = self.db.cursor()
+        cur.execute("SELECT rss_episode_id FROM " + self.table_episodes + " WHERE rss_episode_id = ?", [episode_id])
+        data = cur.fetchall()
+        if len(data) > 0:
+            return False
+        else:
+            return True
