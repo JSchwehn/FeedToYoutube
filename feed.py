@@ -1,5 +1,5 @@
 class Feed:
-    def __init__(self, url, feed_id="", etag="", subtitle="", title="", updated="", image=""):
+    def __init__(self, config, url, feed_id="", etag="", subtitle="", title="", updated="", image=""):
         self.url = url
         self.etag = etag
         self.title = title
@@ -7,6 +7,15 @@ class Feed:
         self.subtitle = subtitle
         self.feed_id = feed_id
         self.image = image
+        self.config = config
+
+    @property
+    def config(self):
+        return self.config
+
+    @config.setter
+    def config(self, value):
+        self.config = value
 
     @property
     def image(self):
@@ -75,3 +84,14 @@ class Feed:
     def subtitle(self, value):
         self.subtitle = value
 
+    def getNewEpisodes(self):
+        retVal = []
+
+        last = hasattr(self.config, "last_episode_only") and self.config.last_episode_only == "True"
+        for e in self.episodes:
+            if e.is_new or last:
+                retVal.append(e)
+                if last:
+                    return retVal
+                    # return  [e for e in self.episodes if e.is_new == True and e.published is not ""]
+        return retVal

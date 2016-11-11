@@ -9,6 +9,7 @@ class Chapter:
         self.image = image
         self.href = href
         self.chapter_id = chapter_id
+        self.episode_id = episode_id
 
     @property
     def chapter_id(self):
@@ -49,3 +50,11 @@ class Chapter:
     @title.setter
     def title(self, value):
         self.title = value
+
+    @property
+    def episode_id(self):
+        return self.episode_id
+
+    @episode_id.setter
+    def episode_id(self, value):
+        self.episode_id = value

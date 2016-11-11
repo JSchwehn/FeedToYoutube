@@ -1,6 +1,6 @@
 import configargparse
 from rssCatcher import RssCatcher
-
+from videoCreator import VideoCreator
 
 class RssVideoCreator:
     config = None
@@ -22,9 +22,15 @@ class RssVideoCreator:
         p.add('-vfps', '--video-fps', help='Video frames per seconds')
         p.add('-db', '--db-name', help='Name of the local feed database')
         p.add('-i', '--init', help='Imports feed with out any video processing and uploading')
+        p.add('-b', '--background-image', help='Path to a background image')
+        p.add('-font', '--font', help='Path to a eot font file')
+        p.add('-l', '--last-episode-only', help='Only process last episode')
+        p.add('-force-upload', '--force-upload', help='Force Upload to youtube')
+
         self.config = p.parse_args()
 
     def run(self):
         for feedUrl in self.config.feed:
             rssCatcher = RssCatcher(self.config)
-            self.feeds.append(rssCatcher.load_rss(feedUrl))
+            feed = rssCatcher.load_rss(feedUrl)
+            VideoCreator(self.config).run(feed)

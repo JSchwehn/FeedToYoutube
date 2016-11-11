@@ -1,10 +1,12 @@
+# -*- coding: utf-8 -*-
 import sqlite3
 import feedparser
 import datetime
+import sys
 from feed import Feed
 from episode import Episode
 from chapter import Chapter
-from hashlib import md5
+import pprint
 
 
 class RssCatcher:
@@ -39,21 +41,29 @@ class RssCatcher:
         imageUrl = ""
         if hasattr(f.feed, 'image') and hasattr(f.feed.image, "href"):
             imageUrl = f.feed.image.href
-        feed = Feed(feedUrl,
+
+        feed = Feed(self.config, feedUrl,
                     image=imageUrl,
                     etag=etag,
                     subtitle=f.feed.summary,
                     title=f.feed.title,
-                    updated=f.feed.updated)
+                    updated=f.feed.updated
+                    )
+
         self.save_feed(feed)
         feed.episodes = []
 
         print "Importing " + feed.title
         for episode in f.entries:
-            print " Episode " + episode.title
+            sys.stdout.write(" Episode " + episode.title)
+            sys.stdout.flush()
             if self._is_known_episode(episode.id):
+                print " - old"
+                feed.episodes.append(self.load_episode_by_rss_id(rss_episode_id=episode.id))
                 continue
 
+            print " - new"
+            is_new = True
             # chapter handling
             cs = []
             if hasattr(episode, "psc_chapters"):
@@ -73,7 +83,7 @@ class RssCatcher:
                     print "\t" + c.start + ": " + c.title + " Image= " + c.image + " Href= " + c.href
                     cs.append(c)
             image = ""
-            duration = "";
+            duration = ""
             if hasattr(episode, 'image') and hasattr(episode.image, "href"):
                 image = episode.image.href
             if hasattr(episode, 'itunes_duration'):
@@ -87,7 +97,8 @@ class RssCatcher:
                         description=episode.summary,
                         published=episode.published,
                         chapters=cs,
-                        image=image
+                        image=image,
+                        is_new=is_new
                         )
             self._insert_episode(e)
             if hasattr(feed.episodes, 'append'):
@@ -176,6 +187,7 @@ class RssCatcher:
               'image BLOB, ' \
               'duration VARCHAR, link VARCHAR, chapters TEXT ,' \
               'published DATE, ' \
+              'movie_created DATE, ' \
               'youtube_upload_date DATE);'
         cur.execute(sql)
         sql = """
@@ -193,7 +205,39 @@ class RssCatcher:
         sql = "CREATE INDEX IF NOT EXISTS `eid_idx` ON `chapters` (`episode_id` );"
         cur.execute(sql)
 
+    def load_episode_by_rss_id(self, rss_episode_id=None):
+        sql = "SELECT * FROM " + self.table_episodes + " AS e  WHERE rss_episode_id = ? LIMIT 1"
+        cur = self.db.cursor()
+
+        cur.row_factory = sqlite3.Row
+        cur.execute(sql, [rss_episode_id])
+        d = cur.fetchone()
+        e = Episode(episode_id=d['id'],
+                    rss_episode_id=d["rss_episode_id"],
+                    duration=d["duration"],
+                    title=d["title"],
+                    description=d["description"],
+                    subtitle=d["subtitle"],
+                    link=d["link"],
+                    published=d["published"],
+                    image=d["image"],
+                    chapters=[]
+                    )
+        sql = "SELECT * FROM " + self.table_chapters + " WHERE episode_id = ?"
+        cur.row_factory = sqlite3.Row
+        cur.execute(sql, [d["id"]])
+        d = cur.fetchall()
+        chapters = []
+        for c in d:
+            chapters.append(
+                Chapter(c["start"], c["title"], chapter_id=c["id"], episode_id=c["episode_id"], image=c["image"],
+                        href=c["href"]))
+        e.chapters = chapters
+        return e
+
     def _feed_has_changed(self, etag):
+        if self.config.force_upload == 'True':
+            return True
         cur = self.db.cursor()
         cur.execute("SELECT etag FROM " + self.table_feed + " WHERE etag = ?", [etag])
         data = cur.fetchall()
@@ -210,3 +254,9 @@ class RssCatcher:
             return True
         else:
             return False
+
+    def mark_movie_created(self):
+        pass
+
+    def mark_movie_uploaded(self):
+        pass

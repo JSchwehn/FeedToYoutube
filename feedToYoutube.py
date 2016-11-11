@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 from rssVideoCreator import RssVideoCreator
 
 def get_rss():

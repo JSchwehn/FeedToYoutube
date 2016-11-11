@@ -2,15 +2,15 @@ from chapter import Chapter
 
 
 class Episode:
+    is_new = False
+
     @property
     def episode_id(self):
         return self.rss_episode_id
-        pass
 
     @episode_id.setter
     def episode_id(self, value):
         self.rss_episode_id = value
-
 
     @property
     def rss_feed_id(self):
@@ -70,7 +70,7 @@ class Episode:
 
     @description.setter
     def description(self, value):
-        self.description = value#
+        self.description = value  #
 
     @property
     def subtitle(self):
@@ -88,13 +88,13 @@ class Episode:
     def published(self, value):
         self.published = value
 
-        @property
-        def image(self):
-            return self.image
+    @property
+    def image(self):
+        return self.image
 
-        @image.setter
-        def image(self, value):
-            self.image = value
+    @image.setter
+    def image(self, value):
+        self.image = value
 
     def __init__(self,
                  episode_id=None,
@@ -107,6 +107,7 @@ class Episode:
                  duration="",
                  link="",
                  image="",
+                 is_new=False,
                  chapters=[]):
         self.episode_id = episode_id,
         self.feed_id = feed_id
@@ -119,6 +120,4 @@ class Episode:
         self.published = published
         self.chapters = chapters
         self.image = image
-
-    def add_chapter(self, chapter):
-        self.chapters.append(chapter)
+        self.is_new = is_new
