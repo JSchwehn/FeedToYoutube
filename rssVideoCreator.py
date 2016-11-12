@@ -26,6 +26,7 @@ class RssVideoCreator:
         p.add('-font', '--font', help='Path to a eot font file')
         p.add('-l', '--last-episode-only', help='Only process last episode')
         p.add('-force-upload', '--force-upload', help='Force Upload to youtube')
+        p.add('-t', '--temp-path', help='Where to store temp data')
 
         self.config = p.parse_args()
 

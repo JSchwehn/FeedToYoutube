@@ -88,10 +88,15 @@ class RssCatcher:
                 image = episode.image.href
             if hasattr(episode, 'itunes_duration'):
                 duration = episode.itunes_duration
+            if hasattr(episode, "links"):
+                for link in episode.links:
+                    if link.type == 'audio/mpeg':
+                        link = link.href
+                        break
             e = Episode(feed_id=feed.feed_id,
                         rss_episode_id=episode.id,
                         duration=duration,
-                        link=episode.link,
+                        link=link,
                         title=episode.title,
                         subtitle=episode.subtitle,
                         description=episode.summary,
