@@ -8,9 +8,21 @@ import moviepy.config as cf
 import requests
 import os
 import sys
-from mutagen import mp3
+#from thread import start_new_thread
+import multiprocessing
+
+import pprint as p
 
 class VideoCreator:
+
+    @property
+    def thread_count(self):
+        return self.thread_count
+
+    @thread_count.setter
+    def thread_count(self, value):
+        self.thread_count = value
+
     @property
     def feed(self):
         return self.feed
@@ -30,19 +42,22 @@ class VideoCreator:
     def run(self, feed):
         if not hasattr(feed, 'getNewEpisodes'):
             return None
-        cf.change_settings({"FFMPEG_BINARY": r'C:\Program Files\ImageMagick-7.0.3-Q16-HDRI\ffmpeg.exe'})
+
         newEpisodes = feed.getNewEpisodes()
         for episode in newEpisodes:
-            localMp3 = self.download(episode.link)
-            audioClip = mpe.AudioFileClip(localMp3)
-            print "duration", audioClip.duration
-
-            print "\t creating image " + episode.title
+            audioClip = mpe.AudioFileClip(self.download(episode.link))
+            print "\t creating images for " + episode.title
             self.make_image1(episode)
+            self.createMovie()
+
+    def createMovie(self, audioClip=None):
+        pass
 
     def download(self, link):
         # todo check if the file aready exists
         file_name = self.config.temp_path + os.path.basename(link)
+        if os.path.isfile(file_name):
+            return file_name
         with open(file_name, "wb") as f:
             print "Downloading %s" % file_name
             response = requests.get(link, stream=True)
@@ -75,30 +90,39 @@ class VideoCreator:
         # load background image
         if hasattr(self.config, "background_image"):
             cnt = 0
-            for chapter in episode.chapters:
-                img = Image.open(self.config.background_image)
-                self.draw_title(episode, img)
-                self.draw_chapter(chapter, img)
-                img.save('tmp/' + md5(episode.title.encode('utf-8')).hexdigest() + '_' + str(cnt) + '.png')
+            #ch = list(self.chunks(episode.chapters,4))
+            jobs = []
+            for c in episode.chapters:
+                p = multiprocessing.Process(target=self.create_image, args=(c.title,episode.title, cnt))
+                jobs.append(p)
+                p.start()
+                p.join()
                 cnt += 1
-        pass
+                   
 
-    def draw_title(self, episode, img):
+    def create_image(self, chapter_text, episode_text="",  cnt=0):
+        img = Image.open(self.config.background_image)
+        self.draw_title(episode_text, img)
+        self.draw_chapter(chapter_text, img)
+        img.save('tmp/' + md5(episode_text.encode('utf-8')).hexdigest() + '_' + str(cnt) + '.png')
+
+
+    def draw_title(self, episode_title, img):
         if hasattr(self.config, "font"):
             img_fraction_title = 0.8
             font_size = 18  # todo min font size -> config
             text_pos_top = (img.size[1] / 2) - font_size / 2
             text_pos_top -= 100  # todo -> config
-            self.draw_dynamic_centered_text(episode.title, img, img_fraction_title, font_size,
+            self.draw_dynamic_centered_text(episode_title, img, img_fraction_title, font_size,
                                             text_pos_top=text_pos_top)
 
-    def draw_chapter(self, chapter, img):
+    def draw_chapter(self, chapter_title, img):
         if hasattr(self.config, "font"):
             img_fraction = 0.6  # todo -> config
             font_size = 18  # todo -> config
             text_pos_top = (img.size[1] / 2) - font_size / 2
             text_pos_top -= -200  # todo -> config
-            self.draw_dynamic_centered_text(chapter.title, img, img_fraction, font_size, text_pos_top=text_pos_top)
+            self.draw_dynamic_centered_text(chapter_title, img, img_fraction, font_size, text_pos_top=text_pos_top)
 
     def draw_dynamic_centered_text(self, text, img, img_fraction=0.9, min_font_size=18, text_pos_top=0):
         if hasattr(self.config, "font"):
@@ -107,6 +131,10 @@ class VideoCreator:
             font_x_pos, font_y_pos = dynamic_font.getsize(text)
             text_pos_left = (img.size[0] / 2) - font_x_pos / 2
             draw.text((text_pos_left, text_pos_top), text, (128, 128, 128), font=dynamic_font)
+
+    def chunks(self,l,n):
+        for i in xrange(0,len(l),n):
+          yield l[i:i+n]
 
     def __init__(self, config):
         self.config = config
