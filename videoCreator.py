@@ -4,11 +4,10 @@ from episode import Episode
 from PIL import Image, ImageFont, ImageDraw
 from hashlib import md5
 import moviepy.editor as mpe
-import moviepy.config as cf
+
 import requests
 import os
 import sys
-#from thread import start_new_thread
 import multiprocessing
 
 import pprint as p
@@ -53,6 +52,11 @@ class VideoCreator:
     def createMovie(self, audioClip=None):
         pass
 
+    def createClip(self, chapter):
+        img = 'tmp/'+chapter.title
+        clip = mpe.ImageClip(img)
+        pass
+
     def download(self, link):
         # todo check if the file aready exists
         file_name = self.config.temp_path + os.path.basename(link)
@@ -86,25 +90,26 @@ class VideoCreator:
             font = ImageFont.truetype(self.config.font, font_size)
         return font
 
+
     def make_image1(self, episode=None):
         # load background image
         if hasattr(self.config, "background_image"):
             cnt = 0
-            #ch = list(self.chunks(episode.chapters,4))
             jobs = []
             for c in episode.chapters:
                 p = multiprocessing.Process(target=self.create_image, args=(c.title,episode.title, cnt))
                 jobs.append(p)
                 p.start()
-                p.join()
                 cnt += 1
-                   
+
 
     def create_image(self, chapter_text, episode_text="",  cnt=0):
+        print " Start job "+str(cnt)
         img = Image.open(self.config.background_image)
         self.draw_title(episode_text, img)
         self.draw_chapter(chapter_text, img)
-        img.save('tmp/' + md5(episode_text.encode('utf-8')).hexdigest() + '_' + str(cnt) + '.png')
+        img.save('tmp/' + md5(chapter_text.encode('utf-8')).hexdigest() + '_' + str(cnt) + '.png')
+        print " Finished job "+str(cnt) 
 
 
     def draw_title(self, episode_title, img):
