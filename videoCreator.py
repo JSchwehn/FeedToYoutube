@@ -9,10 +9,12 @@ import requests
 import os
 import sys
 import multiprocessing
-
+import re
 import pprint as p
 
 class VideoCreator:
+
+    nprocs = 4
 
     @property
     def thread_count(self):
@@ -51,20 +53,28 @@ class VideoCreator:
 
     def getChapterDuration(self, chapter):
         # todo implement
-        return 12
+        return 3
         pass
 
     def createMovie(self, episode=None, audioClip=None):
         print " Creating Clips ..."
         if episode is None:
             return None
+        clips = []
         for chapter in episode.chapters:
-            self.createClip(chapter, self.getChapterDuration(chapter))
+            clips.append(self.createClip(chapter, self.getChapterDuration(chapter)))
+        final = mpe.concatenate_videoclips(clips,method="compose")
+        output = "output/" + self.slugify(episode.title) + ".mp4"
+        fps = 29.98
+        if hasattr(self.config, 'video_fps'):
+            fps = self.config.video_fps
+        
+        final.write_videofile(output, fps=float(fps),codec='libx264', bitrate="800k")
         pass
 
     def createClip(self, chapter, duration=10):
-        img = 'tmp/' + md5(chapter.title.encode('utf-8')).hexdigest()+".png"
-        print "Try to open "+img
+        filename  = md5(chapter.title.encode('utf-8')).hexdigest()
+        img = 'tmp/' + filename +".png"
         if not os.path.isfile:
             print "File not found"
             return None
@@ -73,11 +83,12 @@ class VideoCreator:
         output = "./"
         if hasattr(self.config, 'output'):
             output = self.config.output
-        fps = 25
+        fps = 29.98
         if hasattr(self.config, 'video_fps'):
             fps = self.config.video_fps
-        output += 'test1.avi'
-        clip.write_videofile(output, fps=fps, threads=10)
+        #output = 'tmp/' + filename + ".mp4"
+        #clip.write_videofile(output, fps=float(fps),codec='libx264', bitrate="800k",preset="ultrafast")
+        return clip
         pass
 
     def download(self, link):
@@ -160,5 +171,18 @@ class VideoCreator:
             text_pos_left = (img.size[0] / 2) - font_x_pos / 2
             draw.text((text_pos_left, text_pos_top), text, (128, 128, 128), font=dynamic_font)
 
+    def slugify(self, value):
+        """
+        Normalizes string, converts to lowercase, removes non-alpha characters,
+        and converts spaces to hyphens.
+        """
+        import unicodedata
+        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
+        value = unicode(re.sub('[^\w\s-]', '', value).strip().lower())
+        value = unicode(re.sub('[-\s]+', '-', value))
+        return value
+
     def __init__(self, config):
         self.config = config
+
+
