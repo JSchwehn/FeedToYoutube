@@ -7,7 +7,7 @@ import moviepy.editor as mpe
 import requests
 import os
 import sys
-from multiprocessing import Lock, Process, Queue, current_process
+from multiprocessing import Lock, Process, Queue, current_process, cpu_count
 import re
 
 
@@ -42,7 +42,7 @@ class VideoCreator:
         if not hasattr(feed, 'getNewEpisodes'):
             return None
 
-        self.nprocs = multiprocessing.cpu_count()
+        self.nprocs = cpu_count()
 
         newEpisodes = feed.getNewEpisodes()
         for episode in newEpisodes:
@@ -113,30 +113,32 @@ class VideoCreator:
             font = ImageFont.truetype(self.config.font, font_size)
         return font
 
-    def image_worker(self, episode_text, chapter_text, work_queue, done_queue):
+    def image_worker(self, episode_text, work_queue, done_queue):
         try:
-            for url in iter(work_queue.get, 'STOP'):
-                filename = 'tmp/' + md5(chapter_text.encode('utf-8')).hexdigest() + '.png'
+            for chapter in iter(work_queue.get, 'STOP'):
+                filename = 'tmp/' + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
                 img = Image.open(self.config.background_image)
                 self.draw_title(episode_text, img)
-                self.draw_chapter(chapter_text, img)
+                self.draw_chapter(chapter.title, img)
                 img.save(filename)
-                done_queue.put("%s - %s got %s." % (current_process().name, url, filename))
+                done_queue.put("%s - %s got %s." % (current_process().name, filename, filename))
         except Exception, e:
+            filename = 'tmp/' + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
             done_queue.put("%s failed on %s with: %s" % (current_process().name, filename, e.message))
         return True
 
     def make_image1(self, episode=None):
         # load background image
         if hasattr(self.config, "background_image"):
-            cnt = 0
             jobs = []
             workers = self.nprocs
             work_queue = Queue()
             done_queue = Queue()
             for c in episode.chapters:
                 work_queue.put(c)
-                p = Process(target=self.create_image, args=(c.title, episode.title, work_queue, done_queue))
+
+            for w in xrange(workers):
+                p = Process(target=self.image_worker, args=(episode.title, work_queue, done_queue))
                 p.start()
                 jobs.append(p)
                 work_queue.put('STOP')
@@ -148,13 +150,13 @@ class VideoCreator:
             for status in iter(done_queue.get, 'STOP'):
                 print status
 
-    def create_image(self, chapter_text, episode_text="", cnt=0):
-        print " Start job " + str(cnt)
-        img = Image.open(self.config.background_image)
-        self.draw_title(episode_text, img)
-        self.draw_chapter(chapter_text, img)
-        img.save('tmp/' + md5(chapter_text.encode('utf-8')).hexdigest() + '.png')
-        print " Finished job " + str(cnt)
+    #def create_image(self, chapter_text, episode_text="", cnt=0):
+    #    print " Start job " + str(cnt)
+    #    img = Image.open(self.config.background_image)
+    #    self.draw_title(episode_text, img)
+    #    self.draw_chapter(chapter_text, img)
+    #    img.save('tmp/' + md5(chapter_text.encode('utf-8')).hexdigest() + '.png')
+    #    print " Finished job " + str(cnt)
 
     def draw_title(self, episode_title, img):
         if hasattr(self.config, "font"):
