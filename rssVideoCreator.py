@@ -19,7 +19,7 @@ class RssVideoCreator:
         p.add('-f', '--feed', nargs="+", help='URL to the atom feed')
         p.add('-vw', '--video-width', help='Video width in pixels')
         p.add('-vh', '--video-height', help='Video height in pixels')
-        p.add('-vfps', '--video-fps', help='Video frames per seconds')
+        p.add('-fps', '--video-fps', help='Video frames per seconds')
         p.add('-db', '--db-name', help='Name of the local feed database')
         p.add('-i', '--init', help='Imports feed with out any video processing and uploading')
         p.add('-b', '--background-image', help='Path to a background image')
@@ -27,6 +27,7 @@ class RssVideoCreator:
         p.add('-l', '--last-episode-only', help='Only process last episode')
         p.add('-force-upload', '--force-upload', help='Force Upload to youtube')
         p.add('-t', '--temp-path', help='Where to store temp data')
+        p.add('-o', '--output', help='Where to store the created movie')
 
         self.config = p.parse_args()
 

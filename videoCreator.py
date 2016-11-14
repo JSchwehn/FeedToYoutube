@@ -49,12 +49,29 @@ class VideoCreator:
             self.make_image1(episode)
             self.createMovie()
 
-    def createMovie(self, audioClip=None):
+    def getChapterDuration(self, chapter):
+        # todo implement
+        return 12
         pass
 
-    def createClip(self, chapter):
-        img = 'tmp/'+chapter.title
-        clip = mpe.ImageClip(img)
+    def createMovie(self, episode=None, audioClip=None):
+        print " Creating Clips ..."
+        if episode is None:
+            return None
+        for chapter in episode.chapters:
+            self.createClip(chapter, self.getChapterDuration(chapter))
+        pass
+
+    def createClip(self, chapter, duration=10):
+        img = 'tmp/' + + md5(chapter.title.encode('utf-8')).hexdigest()
+        clip = mpe.ImageClip(img, duration=duration)
+        output = "./"
+        if hasattr(self.config, 'output'):
+            output = self.config.output
+        fps = 25
+        if hasattr(self.config, 'video_fps'):
+            fps = self.config.video_fps
+        clip.write_videofile(output, fps=fps)
         pass
 
     def download(self, link):
@@ -108,7 +125,7 @@ class VideoCreator:
         img = Image.open(self.config.background_image)
         self.draw_title(episode_text, img)
         self.draw_chapter(chapter_text, img)
-        img.save('tmp/' + md5(chapter_text.encode('utf-8')).hexdigest() + '_' + str(cnt) + '.png')
+        img.save('tmp/' + md5(chapter_text.encode('utf-8')).hexdigest() + '.png')
         print " Finished job "+str(cnt) 
 
 
@@ -136,10 +153,6 @@ class VideoCreator:
             font_x_pos, font_y_pos = dynamic_font.getsize(text)
             text_pos_left = (img.size[0] / 2) - font_x_pos / 2
             draw.text((text_pos_left, text_pos_top), text, (128, 128, 128), font=dynamic_font)
-
-    def chunks(self,l,n):
-        for i in xrange(0,len(l),n):
-          yield l[i:i+n]
 
     def __init__(self, config):
         self.config = config

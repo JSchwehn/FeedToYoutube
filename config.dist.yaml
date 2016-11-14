@@ -1,11 +1,15 @@
 # Database:
 db-name: feed_test.db
-
+last-episode-only: True
 # Feed
-feed : http://re-talk.de/feed/mp3/
-
-# Video
+# feed : [http://re-talk.de/feed/mp3/, http://www.i1t2b3.de/podcast/torontor.xml,http://www.die-hoermupfel.de/?feed=mp3]
+#feed : [http://www.die-hoermupfel.de/?feed=mp3]
+feed: [http://re-talk.de/feed/mp3/]
+force-upload: True
 video-height: 1080
 video-width: 1920
 video-fps: 60
-
+background-image: assets/retalk_fullhd3.png
+temp-path: tmp/
+font: assets/HelveticaNeue-Light.eot
+output: output/
