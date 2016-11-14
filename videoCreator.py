@@ -47,7 +47,7 @@ class VideoCreator:
             audioClip = mpe.AudioFileClip(self.download(episode.link))
             print "\t creating images for " + episode.title
             self.make_image1(episode)
-            self.createMovie()
+            self.createMovie(episode)
 
     def getChapterDuration(self, chapter):
         # todo implement
@@ -63,15 +63,21 @@ class VideoCreator:
         pass
 
     def createClip(self, chapter, duration=10):
-        img = 'tmp/' + + md5(chapter.title.encode('utf-8')).hexdigest()
+        img = 'tmp/' + md5(chapter.title.encode('utf-8')).hexdigest()+".png"
+        print "Try to open "+img
+        if not os.path.isfile:
+            print "File not found"
+            return None
         clip = mpe.ImageClip(img, duration=duration)
+        clip.duration = duration
         output = "./"
         if hasattr(self.config, 'output'):
             output = self.config.output
         fps = 25
         if hasattr(self.config, 'video_fps'):
             fps = self.config.video_fps
-        clip.write_videofile(output, fps=fps)
+        output += 'test1.avi'
+        clip.write_videofile(output, fps=fps, threads=10)
         pass
 
     def download(self, link):
@@ -116,9 +122,9 @@ class VideoCreator:
             for c in episode.chapters:
                 p = multiprocessing.Process(target=self.create_image, args=(c.title,episode.title, cnt))
                 jobs.append(p)
-                p.start()
                 cnt += 1
-
+                p.start()
+                p.join()
 
     def create_image(self, chapter_text, episode_text="",  cnt=0):
         print " Start job "+str(cnt)
