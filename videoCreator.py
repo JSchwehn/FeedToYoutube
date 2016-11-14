@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from episode import Episode
 from PIL import Image, ImageFont, ImageDraw
 from hashlib import md5
 import moviepy.editor as mpe
@@ -8,12 +7,11 @@ import moviepy.editor as mpe
 import requests
 import os
 import sys
-import multiprocessing
+from multiprocessing import Lock, Process, Queue, current_process
 import re
-import pprint as p
+
 
 class VideoCreator:
-
     nprocs = 4
 
     @property
@@ -44,6 +42,8 @@ class VideoCreator:
         if not hasattr(feed, 'getNewEpisodes'):
             return None
 
+        self.nprocs = multiprocessing.cpu_count()
+
         newEpisodes = feed.getNewEpisodes()
         for episode in newEpisodes:
             audioClip = mpe.AudioFileClip(self.download(episode.link))
@@ -54,7 +54,6 @@ class VideoCreator:
     def getChapterDuration(self, chapter):
         # todo implement
         return 3
-        pass
 
     def createMovie(self, episode=None, audioClip=None):
         print " Creating Clips ..."
@@ -63,33 +62,23 @@ class VideoCreator:
         clips = []
         for chapter in episode.chapters:
             clips.append(self.createClip(chapter, self.getChapterDuration(chapter)))
-        final = mpe.concatenate_videoclips(clips,method="compose")
+        final = mpe.concatenate_videoclips(clips, method="compose")
         output = "output/" + self.slugify(episode.title) + ".mp4"
         fps = 29.98
         if hasattr(self.config, 'video_fps'):
             fps = self.config.video_fps
-        
-        final.write_videofile(output, fps=float(fps),codec='libx264', bitrate="800k")
-        pass
+
+        final.write_videofile(output, fps=float(fps), codec='libx264', bitrate="800k")
 
     def createClip(self, chapter, duration=10):
-        filename  = md5(chapter.title.encode('utf-8')).hexdigest()
-        img = 'tmp/' + filename +".png"
+        filename = md5(chapter.title.encode('utf-8')).hexdigest()
+        img = 'tmp/' + filename + ".png"
         if not os.path.isfile:
             print "File not found"
             return None
         clip = mpe.ImageClip(img, duration=duration)
         clip.duration = duration
-        output = "./"
-        if hasattr(self.config, 'output'):
-            output = self.config.output
-        fps = 29.98
-        if hasattr(self.config, 'video_fps'):
-            fps = self.config.video_fps
-        #output = 'tmp/' + filename + ".mp4"
-        #clip.write_videofile(output, fps=float(fps),codec='libx264', bitrate="800k",preset="ultrafast")
         return clip
-        pass
 
     def download(self, link):
         # todo check if the file aready exists
@@ -124,27 +113,48 @@ class VideoCreator:
             font = ImageFont.truetype(self.config.font, font_size)
         return font
 
+    def image_worker(self, episode_text, chapter_text, work_queue, done_queue):
+        try:
+            for url in iter(work_queue.get, 'STOP'):
+                filename = 'tmp/' + md5(chapter_text.encode('utf-8')).hexdigest() + '.png'
+                img = Image.open(self.config.background_image)
+                self.draw_title(episode_text, img)
+                self.draw_chapter(chapter_text, img)
+                img.save(filename)
+                done_queue.put("%s - %s got %s." % (current_process().name, url, filename))
+        except Exception, e:
+            done_queue.put("%s failed on %s with: %s" % (current_process().name, filename, e.message))
+        return True
 
     def make_image1(self, episode=None):
         # load background image
         if hasattr(self.config, "background_image"):
             cnt = 0
             jobs = []
+            workers = self.nprocs
+            work_queue = Queue()
+            done_queue = Queue()
             for c in episode.chapters:
-                p = multiprocessing.Process(target=self.create_image, args=(c.title,episode.title, cnt))
-                jobs.append(p)
-                cnt += 1
+                work_queue.put(c)
+                p = Process(target=self.create_image, args=(c.title, episode.title, work_queue, done_queue))
                 p.start()
+                jobs.append(p)
+                work_queue.put('STOP')
+
+            for p in jobs:
                 p.join()
 
-    def create_image(self, chapter_text, episode_text="",  cnt=0):
-        print " Start job "+str(cnt)
+            done_queue.put('STOP')
+            for status in iter(done_queue.get, 'STOP'):
+                print status
+
+    def create_image(self, chapter_text, episode_text="", cnt=0):
+        print " Start job " + str(cnt)
         img = Image.open(self.config.background_image)
         self.draw_title(episode_text, img)
         self.draw_chapter(chapter_text, img)
         img.save('tmp/' + md5(chapter_text.encode('utf-8')).hexdigest() + '.png')
-        print " Finished job "+str(cnt) 
-
+        print " Finished job " + str(cnt)
 
     def draw_title(self, episode_title, img):
         if hasattr(self.config, "font"):
@@ -184,5 +194,3 @@ class VideoCreator:
 
     def __init__(self, config):
         self.config = config
-
-
