@@ -7,8 +7,8 @@ This is not even in a alpha state.
 - [x] subscribe to given podcast feed
 - [x] extract data from rss feed
 - [x] avoid multiple uploads
-- [ ] extract image from URL
-- [ ] create movie
+- [x] extract image from URL
+- [x] create movie
 - [ ] prepend intro video
     - [ ] adjust audio
 - [ ] append outro video
