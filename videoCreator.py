@@ -53,10 +53,11 @@ class VideoCreator:
 
     def getChapterDuration(self, chapters, full_duration=None, idx=""):
         print "Detected time: " + chapters[idx].start
-        chapter_end_time = full_duration
-        if chapters[idx + 1] is not None:
+        try:
             chapter_end_time = chapters[idx + 1].start
-        print "Endtime: " + chapter_end_time
+        except IndexError:
+            chapter_end_time = full_duration
+        print "End time: " + chapter_end_time
 
         return 3
 
