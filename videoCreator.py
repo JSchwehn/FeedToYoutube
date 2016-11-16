@@ -49,19 +49,28 @@ class VideoCreator:
             audioClip = mpe.AudioFileClip(self.download(episode.link))
             print "\t creating images for " + episode.title
             self.make_image1(episode)
-            self.createMovie(episode)
+            self.createMovie(episode=episode, audioClip=audioClip)
 
-    def getChapterDuration(self, chapter):
-        # todo implement
+    def getChapterDuration(self, chapters, full_duration=None, idx=""):
+        print "Detected time: " + chapters[idx].start
+        chapter_end_time = full_duration
+        if chapters[idx + 1] is not None:
+            chapter_end_time = chapters[idx + 1].start
+        print "Endtime: " + chapter_end_time
+
         return 3
 
     def createMovie(self, episode=None, audioClip=None):
         print " Creating Clips ..."
-        if episode is None:
+        if episode is None or audioClip is None:
             return None
+        full_duration = audioClip.duration
+
         clips = []
-        for chapter in episode.chapters:
-            clips.append(self.createClip(chapter, self.getChapterDuration(chapter)))
+        for idx, chapter in enumerate(episode.chapters):
+            clips.append(self.createClip(chapter, self.getChapterDuration(episode.chapters, idx=idx,
+                                                                          full_duration=full_duration)))
+
         final = mpe.concatenate_videoclips(clips, method="compose")
         output = "output/" + self.slugify(episode.title) + ".mp4"
         fps = 29.98
@@ -150,7 +159,7 @@ class VideoCreator:
             for status in iter(done_queue.get, 'STOP'):
                 print status
 
-    #def create_image(self, chapter_text, episode_text="", cnt=0):
+    # def create_image(self, chapter_text, episode_text="", cnt=0):
     #    print " Start job " + str(cnt)
     #    img = Image.open(self.config.background_image)
     #    self.draw_title(episode_text, img)
