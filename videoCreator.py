@@ -3,6 +3,7 @@
 from PIL import Image, ImageFont, ImageDraw
 from hashlib import md5
 import moviepy.editor as mpe
+from moviepy.tools import cvsecs
 
 import requests
 import os
@@ -52,13 +53,13 @@ class VideoCreator:
             self.createMovie(episode=episode, audioClip=audioClip)
 
     def getChapterDuration(self, chapters, full_duration=None, idx=""):
-        print "Detected time: " + chapters[idx].start
+        start = cvsecs(chapters[idx].start)
         try:
             chapter_end_time = chapters[idx + 1].start
         except IndexError:
             chapter_end_time = full_duration
-        print "End time: " + chapter_end_time
-        print ""
+
+        print "Duration : " + chapter_end_time - start
 
         return 3
 
