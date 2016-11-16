@@ -58,6 +58,7 @@ class VideoCreator:
         except IndexError:
             chapter_end_time = full_duration
         print "End time: " + chapter_end_time
+        print ""
 
         return 3
 
