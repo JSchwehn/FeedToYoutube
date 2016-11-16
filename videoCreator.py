@@ -48,6 +48,7 @@ class VideoCreator:
         newEpisodes = feed.getNewEpisodes()
         for episode in newEpisodes:
             audioClip = mpe.AudioFileClip(self.download(episode.link))
+            
             print "\t creating images for " + episode.title
             self.make_image1(episode)
             self.createMovie(episode=episode, audioClip=audioClip)
@@ -59,9 +60,10 @@ class VideoCreator:
         except IndexError:
             chapter_end_time = full_duration
 
-        print "Duration : " + chapter_end_time - start
+        chapter_end_time = cvsecs(chapter_end_time)
+        duration = chapter_end_time - start
 
-        return 3
+        return duration
 
     def createMovie(self, episode=None, audioClip=None):
         print " Creating Clips ..."
@@ -79,7 +81,7 @@ class VideoCreator:
         fps = 29.98
         if hasattr(self.config, 'video_fps'):
             fps = self.config.video_fps
-
+        final.set_audio(audioClip)
         final.write_videofile(output, fps=float(fps), codec='libx264', bitrate="800k")
 
     def createClip(self, chapter, duration=10):
