@@ -55,7 +55,10 @@ class VideoCreator:
             self.createMovie(episode=episode, audioClip=audioClip)
 
     def getChapterDuration(self, chapters, full_duration=None, idx=None):
+        
         start = cvsecs(chapters[idx].start)
+        if idx is 0:
+            start = '00:00:00'
         try:
             chapter_end_time = chapters[idx + 1].start
         except IndexError:
@@ -89,9 +92,6 @@ class VideoCreator:
 
     def cleanup(self):
         d = path(self.config.temp_path)
-#       files_png = d.walkfiles("*.png")
- #      files_mp3 = d.walkfiles("*.mp3")
-        #files = files_png +  files_mp3
         for file in d.files('*.png'):
             file.remove()
             print "Removed {} file".format(file)
@@ -177,8 +177,6 @@ class VideoCreator:
                 p.join()
 
             done_queue.put('STOP')
-            for status in iter(done_queue.get, 'STOP'):
-                print status
 
     def draw_title(self, episode_title, img):
         if hasattr(self.config, "font"):
