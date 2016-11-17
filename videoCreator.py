@@ -78,7 +78,6 @@ class VideoCreator:
         #if self.config.test:
         #    full_duration = float(10)
 
-
         clips = []
         for idx, chapter in enumerate(episode.chapters):
             clips.append(self.createClip(chapter, self.getChapterDuration(episode.chapters, idx=idx,
@@ -181,6 +180,8 @@ class VideoCreator:
                 p.join()
 
             done_queue.put('STOP')
+            for status in iter(done_queue.get, 'STOP'):
+                print status
 
     def draw_title(self, episode_title, img):
         if hasattr(self.config, "font"):
