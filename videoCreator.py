@@ -53,7 +53,7 @@ class VideoCreator:
             self.make_image1(episode)
             self.createMovie(episode=episode, audioClip=audioClip)
 
-    def getChapterDuration(self, chapters, full_duration=None, idx=""):
+    def getChapterDuration(self, chapters, full_duration=None, idx=None):
         start = cvsecs(chapters[idx].start)
         try:
             chapter_end_time = chapters[idx + 1].start
@@ -76,13 +76,14 @@ class VideoCreator:
             clips.append(self.createClip(chapter, self.getChapterDuration(episode.chapters, idx=idx,
                                                                           full_duration=full_duration)))
 
-        final = mpe.concatenate_videoclips(clips, method="compose")
         output = "output/" + self.slugify(episode.title) + ".mp4"
         fps = 29.98
         if hasattr(self.config, 'video_fps'):
             fps = self.config.video_fps
-        final.set_audio(audioClip)
-        final.write_videofile(output, fps=float(fps), codec='libx264', bitrate="800k")
+
+        final = mpe.concatenate_videoclips(clips, method="compose")
+        final = final.set_audio(audioClip)
+        final.write_videofile(output, threads=self.nprocs, fps=float(fps), codec='libx264', bitrate="800k")
 
     def createClip(self, chapter, duration=10):
         filename = md5(chapter.title.encode('utf-8')).hexdigest()
