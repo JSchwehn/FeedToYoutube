@@ -57,8 +57,8 @@ class VideoCreator:
     def getChapterDuration(self, chapters, full_duration=None, idx=None):
         
         start = cvsecs(chapters[idx].start)
-        if idx is 0:
-            start = '00:00:00'
+        #if idx is 0:
+        #    start = 0
         try:
             chapter_end_time = chapters[idx + 1].start
         except IndexError:
@@ -75,10 +75,14 @@ class VideoCreator:
             return None
         full_duration = audioClip.duration
 
+        #if self.config.test:
+        #    full_duration = float(10)
+
+
         clips = []
         for idx, chapter in enumerate(episode.chapters):
             clips.append(self.createClip(chapter, self.getChapterDuration(episode.chapters, idx=idx,
-                                                                          full_duration=full_duration)))
+                                                                          full_duration=float(full_duration))))
 
         output = "output/" + self.slugify(episode.title) + ".mp4"
         fps = 29.98
@@ -87,7 +91,7 @@ class VideoCreator:
 
         final = mpe.concatenate_videoclips(clips, method="compose")
         final = final.set_audio(audioClip)
-        final.write_videofile(output, threads=self.nprocs, fps=float(fps), codec='libx264', bitrate="8k")
+        final.write_videofile(output, threads=self.nprocs, fps=float(fps), codec=self.config.video_codec, bitrate=float(self.config.video_bitrate))
         self.cleanup()
 
     def cleanup(self):
@@ -134,10 +138,10 @@ class VideoCreator:
         return file_name
 
     def get_dynamic_font_size(self, text, img, canvas_fraction=0.9):
-        font_size = 18  # todo min font size -> config
+        font_size = self.config.font_size_min
         font = ImageFont.truetype(self.config.font, font_size)
         while font.getsize(text)[0] < canvas_fraction * img.size[0]:
-            if font_size > 90:  # todo max font size ->config
+            if font_size > self.font_size_max:
                 break
             font_size += 1
             font = ImageFont.truetype(self.config.font, font_size)
@@ -146,7 +150,7 @@ class VideoCreator:
     def image_worker(self, episode_text, work_queue, done_queue):
         try:
             for chapter in iter(work_queue.get, 'STOP'):
-                filename = 'tmp/' + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
+                filename = self.config.temp_path + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
                 img = Image.open(self.config.background_image)
                 self.draw_title(episode_text, img)
                 self.draw_chapter(chapter.title, img)
@@ -181,9 +185,9 @@ class VideoCreator:
     def draw_title(self, episode_title, img):
         if hasattr(self.config, "font"):
             img_fraction_title = 0.8
-            font_size = 18  # todo min font size -> config
+            font_size = self.config.font_size_min  
             text_pos_top = (img.size[1] / 2) - font_size / 2
-            text_pos_top -= 100  # todo -> config
+            text_pos_top -= self.config.title_top_pos  
             self.draw_dynamic_centered_text(episode_title, img, img_fraction_title, font_size,
                                             text_pos_top=text_pos_top)
 
@@ -192,7 +196,7 @@ class VideoCreator:
             img_fraction = 0.6  # todo -> config
             font_size = 18  # todo -> config
             text_pos_top = (img.size[1] / 2) - font_size / 2
-            text_pos_top -= -200  # todo -> config
+            text_pos_top -= self.config.subtitle_top_pos 
             self.draw_dynamic_centered_text(chapter_title, img, img_fraction, font_size, text_pos_top=text_pos_top)
 
     def draw_dynamic_centered_text(self, text, img, img_fraction=0.9, min_font_size=18, text_pos_top=0):
