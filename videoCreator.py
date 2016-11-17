@@ -8,6 +8,7 @@ from moviepy.tools import cvsecs
 import requests
 import os
 import sys
+from path import path
 from multiprocessing import Lock, Process, Queue, current_process, cpu_count
 import re
 
@@ -83,7 +84,21 @@ class VideoCreator:
 
         final = mpe.concatenate_videoclips(clips, method="compose")
         final = final.set_audio(audioClip)
-        final.write_videofile(output, threads=self.nprocs, fps=float(fps), codec='libx264', bitrate="800k")
+        final.write_videofile(output, threads=self.nprocs, fps=float(fps), codec='libx264', bitrate="8k")
+        self.cleanup()
+
+    def cleanup(self):
+        d = path(self.config.temp_path)
+#       files_png = d.walkfiles("*.png")
+ #      files_mp3 = d.walkfiles("*.mp3")
+        #files = files_png +  files_mp3
+        for file in d.files('*.png'):
+            file.remove()
+            print "Removed {} file".format(file)
+        for file in d.files('*.mp3'):
+            file.remove()
+            print "Removed {}".format(file)
+
 
     def createClip(self, chapter, duration=10):
         filename = md5(chapter.title.encode('utf-8')).hexdigest()
@@ -164,14 +179,6 @@ class VideoCreator:
             done_queue.put('STOP')
             for status in iter(done_queue.get, 'STOP'):
                 print status
-
-    # def create_image(self, chapter_text, episode_text="", cnt=0):
-    #    print " Start job " + str(cnt)
-    #    img = Image.open(self.config.background_image)
-    #    self.draw_title(episode_text, img)
-    #    self.draw_chapter(chapter_text, img)
-    #    img.save('tmp/' + md5(chapter_text.encode('utf-8')).hexdigest() + '.png')
-    #    print " Finished job " + str(cnt)
 
     def draw_title(self, episode_title, img):
         if hasattr(self.config, "font"):
