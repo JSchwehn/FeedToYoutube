@@ -22,6 +22,7 @@ class RssVideoCreator:
         p.add('-fps', '--video-fps', help='Video frames per seconds')
         p.add('-br', '--video-bitrate', help='Bitrate for the video')
         p.add('-codec', '--video-codec', help='Video Codec')
+        p.add('-audio-codec', '--audio-codec', help='Audio Codec')
         p.add('-db', '--db-name', help='Name of the local feed database')
         p.add('-i', '--init', help='Imports feed with out any video processing and uploading')
         p.add('-b', '--background-image', help='Path to a background image')

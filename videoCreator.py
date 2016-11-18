@@ -91,7 +91,8 @@ class VideoCreator:
         final = mpe.concatenate_videoclips(clips, method="compose")
         if not self.config.test:
             final = final.set_audio(audioClip)
-        final.write_videofile(output, threads=self.nprocs, fps=float(fps), codec=self.config.video_codec, bitrate=self.config.video_bitrate)
+        final.write_videofile(output, threads=self.nprocs, fps=float(fps),temp_audiofile=self.config.temp_path+'temp-audio.m4a', 
+                  audio_codec=self.config.audio_codec, codec=self.config.video_codec, bitrate=self.config.video_bitrate)
         self.cleanup()
 
     def cleanup(self):
