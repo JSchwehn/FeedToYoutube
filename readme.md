@@ -85,3 +85,8 @@ This is not even in a alpha state.
       -test TEST, --test TEST
                             Do not render the whole movie, just 10 sec
     
+###Position the title and subtitle
+The default position is always the center of the screen. 
+So, if you want to move the title up the screen you must define a negative offset
+and if you want go under the middle line you have to set a positive offset.
+e.g. title-pos-top: -100 moves the title text 100px toward the top
