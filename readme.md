@@ -9,12 +9,13 @@ This is not even in a alpha state.
 - [x] avoid multiple uploads
 - [x] extract image from URL
 - [x] create movie
+- [ ] upload to youtube
+- [ ] detect chapter images and display those
 - [ ] prepend intro video
     - [ ] adjust audio
 - [ ] append outro video
     - [ ] adjust audio
-- [ ] detect chapter images and display those
-- [ ] upload to youtube 
+ 
  
 
 ##Usage
@@ -33,10 +34,7 @@ usage: feedToYoutube.py [-h] -c MY_CONFIG [-f FEED [FEED ...]]
                         [-subtitle-pos-top SUBTITLE_POS_TOP] [-test TEST]
 
 Args that start with '--' (eg. -f) can also be set in a config file
-(./config.yaml or specified via -c). Config file syntax allows: key=value,
-flag=true, stuff=[a,b,c] (for details, see syntax at https://goo.gl/R74nmi).
-If an arg is specified in more than one place, then commandline values
-override config file values which override defaults.
+(./config.yaml or specified via -c).
 
 optional arguments:
   -h, --help            show this help message and exit
