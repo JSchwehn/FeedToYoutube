@@ -1,4 +1,10 @@
 
+assets/
+tmp/
+output/
+config.json
+feed_test.db
+
 ### Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/

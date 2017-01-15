@@ -48,6 +48,7 @@ class VideoCreator:
 
         newEpisodes = feed.getNewEpisodes()
         for episode in newEpisodes:
+            print "Audio Link: " + episode.link
             audioClip = mpe.AudioFileClip(self.download(episode.link))
             
             print "\t creating images for " + episode.title
@@ -79,6 +80,8 @@ class VideoCreator:
             full_duration = float(10)
 
         clips = []
+
+
         for idx, chapter in enumerate(episode.chapters):
             clips.append(self.createClip(chapter, self.getChapterDuration(episode.chapters, idx=idx,
                                                                           full_duration=float(full_duration))))
@@ -89,10 +92,11 @@ class VideoCreator:
             fps = self.config.video_fps
 
         final = mpe.concatenate_videoclips(clips, method="compose")
+
         if not self.config.test:
             final = final.set_audio(audioClip)
-        final.write_videofile(output, threads=self.nprocs, fps=float(fps),temp_audiofile=self.config.temp_path+'temp-audio.m4a', 
-                  audio_codec=self.config.audio_codec, codec=self.config.video_codec, bitrate=self.config.video_bitrate)
+
+        final.write_videofile(output, threads=self.nprocs, fps=float(fps),temp_audiofile=self.config.temp_path+'temp-audio.mp3',audio_codec=self.config.audio_codec, codec=self.config.video_codec, bitrate=self.config.video_bitrate)
         self.cleanup()
 
     def cleanup(self):
@@ -103,7 +107,6 @@ class VideoCreator:
         for file in d.files('*.mp3'):
             file.remove()
             print "Removed {}".format(file)
-
 
     def createClip(self, chapter, duration=10):
         filename = md5(chapter.title.encode('utf-8')).hexdigest()
@@ -151,8 +154,8 @@ class VideoCreator:
     def image_worker(self, episode_text, work_queue, done_queue):
         try:
             for chapter in iter(work_queue.get, 'STOP'):
-               # filename = self.config.temp_path + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
-                filename = 'tmp/' + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
+                filename = self.config.temp_path + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
+                #filename = 'tmp/' + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
                 img = Image.open(self.config.background_image)
                 self.draw_title(episode_text, img)
                 self.draw_chapter(chapter.title, img)
@@ -187,7 +190,6 @@ class VideoCreator:
                 print status
 
     def draw_title(self, episode_title, img):
-
         if hasattr(self.config, "font"):
             img_fraction_title = 0.8
             font_size = int(self.config.font_size_min)
