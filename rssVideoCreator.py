@@ -2,6 +2,8 @@ import configargparse
 from rssCatcher import RssCatcher
 from videoCreator import VideoCreator
 
+
+
 class RssVideoCreator:
     config = None
     db = None
@@ -9,6 +11,7 @@ class RssVideoCreator:
     table_episodes = ""
     rss_catcher = None
     feeds = []
+    argparser = None
 
     def __init__(self):
         self.load_config()
@@ -39,11 +42,13 @@ class RssVideoCreator:
         p.add('-title-pos-top', '--title-pos-top', help='Top position og the main title')
         p.add('-subtitle-pos-top', '--subtitle-pos-top', help='Top position og the main subtitle')
         p.add('-test', '--test', action='store_true', help='Do not render the whole movie, just 10 sec')
-        
+        p.add('-secret', '--yt_client_secrets_file', help='Youtube Secret JSON file')
+
+        self.argparser = p
         self.config = p.parse_args()
 
     def run(self):
         for feedUrl in self.config.feed:
-            rssCatcher = RssCatcher(self.config)
-            feed = rssCatcher.load_rss(feedUrl)
-            VideoCreator(self.config).run(feed)
+            VideoCreator(self.config).run(
+                RssCatcher(self.config).load_rss(feedUrl)
+            )

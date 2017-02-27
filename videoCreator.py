@@ -11,6 +11,7 @@ import sys
 from path import path
 from multiprocessing import Process, Queue, current_process, cpu_count
 import re
+from ytUpload import YtUploader
 
 
 class VideoCreator:
@@ -48,12 +49,15 @@ class VideoCreator:
 
         new_episodes = feed.getNewEpisodes()
         for episode in new_episodes:
-            print "Audio Link: " + episode.link
-            audio_clip = mpe.AudioFileClip(self.download(episode.link))
+            output = "output/" + self.slugify(episode.title) + ".mp4"
 
-            print "\t creating images for " + episode.title
-            self.make_image1(episode)
-            self.createMovie(episode=episode, audioClip=audio_clip)
+            if not os.path.isfile(output):
+                print "Audio Link: " + episode.link
+                audio_clip = mpe.AudioFileClip(self.download(episode.link))
+                self.make_image1(episode)
+                self.createMovie(episode=episode, audioClip=audio_clip, output=output)
+
+            YtUploader(self.config).upload(output, episode)
 
     def get_chapter_duration(self, chapters, full_duration=None, idx=None):
         start = cvsecs(chapters[idx].start)
@@ -69,7 +73,7 @@ class VideoCreator:
 
         return duration
 
-    def createMovie(self, episode=None, audioClip=None):
+    def createMovie(self, episode=None, audioClip=None, output=None):
         print " Creating Clips ..."
         if episode is None or audioClip is None:
             return None
@@ -83,8 +87,9 @@ class VideoCreator:
         for idx, chapter in enumerate(episode.chapters):
             clips.append(self.createClip(chapter, self.get_chapter_duration(episode.chapters, idx=idx,
                                                                             full_duration=float(full_duration))))
+        if output is None:
+            output = "output/" + self.slugify(episode.title) + ".mp4"
 
-        output = "output/" + self.slugify(episode.title) + ".mp4"
         fps = 29.98
         if hasattr(self.config, 'video_fps'):
             fps = self.config.video_fps
@@ -120,7 +125,6 @@ class VideoCreator:
         return clip
 
     def download(self, link):
-        # todo check if the file aready exists
         file_name = self.config.temp_path + os.path.basename(link)
         if os.path.isfile(file_name):
             return file_name
@@ -167,6 +171,7 @@ class VideoCreator:
         return True
 
     def make_image1(self, episode=None):
+        print "\t creating images for " + episode.title
         # load background image
         if hasattr(self.config, "background_image"):
             jobs = []
