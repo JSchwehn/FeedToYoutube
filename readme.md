@@ -9,8 +9,8 @@ This is not even in a alpha state.
 - [x] avoid multiple uploads
 - [x] extract image from URL
 - [x] create movie
-- [ ] upload to youtube
-- [ ] detect chapter images and display those
+- [x] upload to youtube
+- [x] detect chapter images and display those
 - [ ] prepend intro video
     - [ ] adjust audio
 - [ ] append outro video
@@ -32,6 +32,7 @@ This is not even in a alpha state.
                             [-font-color-blue FONT_COLOR_BLUE]
                             [-title-pos-top TITLE_POS_TOP]
                             [-subtitle-pos-top SUBTITLE_POS_TOP] [-test TEST]
+                            [-yt_client_secrets_file secret.json]
     
     Args that start with '--' (eg. -f) can also be set in a config file
     (./config.yaml or specified via -c).
@@ -84,7 +85,11 @@ This is not even in a alpha state.
                             Top position og the main subtitle
       -test TEST, --test TEST
                             Do not render the whole movie, just 10 sec
-    
+      --yt_client_secrets_file secret.json
+                            The Youtube
+
+
+
 ###Position the title and subtitle
 The default position is always the center of the screen. 
 So, if you want to move the title up the screen you must define a negative offset
