@@ -25,12 +25,13 @@ class RssCatcher:
     def load_rss(self, feedUrl):
         self.feed_url = feedUrl
         print "Loading RSS Feed: " + self.feed_url
-        f = feedparser.parse(self.feed_url)
+        feedparser.USER_AGENT = "FeedToYoutube/0.0.3 +http://ldk.net/"
+        f = feedparser.parse(self.feed_url, request_headers={'content-type': 'text/html; charset=UTF-8'})
         if not hasattr(f, "etag"):
             if hasattr(f.feed, "updated"):
                 etag = f.feed.updated
             else:
-                raise LookupError('Can\'t find any update indicator. please contact the author. github-co ')
+                raise LookupError('Can\'t find any update indicator. please contact the author.')
         else:
             etag = f.etag
         if not self._feed_has_changed(etag):
@@ -93,6 +94,7 @@ class RssCatcher:
                     if link.type == 'audio/mpeg':
                         link = link.href
                         break
+
             e = Episode(feed_id=feed.feed_id,
                         rss_episode_id=episode.id,
                         duration=duration,
@@ -147,8 +149,9 @@ class RssCatcher:
                                                      "image " \
                                                      ") VALUES (?,?,?,?,?,?,?,?,?)"
         cur = self.db.cursor()
+
         cur.execute(sql, [episode.feed_id, episode.rss_episode_id, episode.duration, episode.title, episode.description,
-                          episode.subtitle, episode.link, episode.published, episode.image])
+                              episode.subtitle, episode.link, episode.published, episode.image])
         episode.episode_id = cur.lastrowid
         self.db.commit()
         self._insert_chapters(episode)

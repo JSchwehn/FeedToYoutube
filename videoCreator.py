@@ -9,7 +9,7 @@ import requests
 import os
 import sys
 from path import path
-from multiprocessing import Lock, Process, Queue, current_process, cpu_count
+from multiprocessing import Process, Queue, current_process, cpu_count
 import re
 
 
@@ -46,17 +46,16 @@ class VideoCreator:
 
         self.nprocs = cpu_count()
 
-        newEpisodes = feed.getNewEpisodes()
-        for episode in newEpisodes:
+        new_episodes = feed.getNewEpisodes()
+        for episode in new_episodes:
             print "Audio Link: " + episode.link
-            audioClip = mpe.AudioFileClip(self.download(episode.link))
-            
+            audio_clip = mpe.AudioFileClip(self.download(episode.link))
+
             print "\t creating images for " + episode.title
             self.make_image1(episode)
-            self.createMovie(episode=episode, audioClip=audioClip)
+            self.createMovie(episode=episode, audioClip=audio_clip)
 
-    def getChapterDuration(self, chapters, full_duration=None, idx=None):
-        
+    def get_chapter_duration(self, chapters, full_duration=None, idx=None):
         start = cvsecs(chapters[idx].start)
         if idx is 0:
             start = 0
@@ -81,10 +80,9 @@ class VideoCreator:
 
         clips = []
 
-
         for idx, chapter in enumerate(episode.chapters):
-            clips.append(self.createClip(chapter, self.getChapterDuration(episode.chapters, idx=idx,
-                                                                          full_duration=float(full_duration))))
+            clips.append(self.createClip(chapter, self.get_chapter_duration(episode.chapters, idx=idx,
+                                                                            full_duration=float(full_duration))))
 
         output = "output/" + self.slugify(episode.title) + ".mp4"
         fps = 29.98
@@ -96,7 +94,10 @@ class VideoCreator:
         if not self.config.test:
             final = final.set_audio(audioClip)
 
-        final.write_videofile(output, threads=self.nprocs, fps=float(fps),temp_audiofile=self.config.temp_path+'temp-audio.mp3',audio_codec=self.config.audio_codec, codec=self.config.video_codec, bitrate=self.config.video_bitrate)
+        final.write_videofile(output, threads=self.nprocs, fps=float(fps),
+                              temp_audiofile=self.config.temp_path + 'temp-audio.mp3',
+                              audio_codec=self.config.audio_codec, codec=self.config.video_codec,
+                              bitrate=self.config.video_bitrate)
         self.cleanup()
 
     def cleanup(self):
@@ -155,7 +156,6 @@ class VideoCreator:
         try:
             for chapter in iter(work_queue.get, 'STOP'):
                 filename = self.config.temp_path + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
-                #filename = 'tmp/' + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
                 img = Image.open(self.config.background_image)
                 self.draw_title(episode_text, img)
                 self.draw_chapter(chapter.title, img)
