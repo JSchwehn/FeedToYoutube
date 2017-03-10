@@ -39,14 +39,19 @@ class RssCatcher:
             return {'status': "304", "message": "Not Modified"}
         if not hasattr(f.feed, "updated"):
             f.feed.updated = unicode(datetime.datetime.now())
+
         imageUrl = ""
         if hasattr(f.feed, 'image') and hasattr(f.feed.image, "href"):
             imageUrl = f.feed.image.href
 
+        summary = f.feed.title
+        if hasattr(f.feed, "summary"):
+            summary = f.feed.summary
+
         feed = Feed(self.config, feedUrl,
                     image=imageUrl,
                     etag=etag,
-                    subtitle=f.feed.summary,
+                    subtitle=summary,
                     title=f.feed.title,
                     updated=f.feed.updated
                     )
@@ -83,24 +88,36 @@ class RssCatcher:
                         title=chapter.title)
                     print "\t" + c.start + ": " + c.title + " Image= " + c.image + " Href= " + c.href
                     cs.append(c)
+
             image = ""
             duration = ""
+
             if hasattr(episode, 'image') and hasattr(episode.image, "href"):
                 image = episode.image.href
+
             if hasattr(episode, 'itunes_duration'):
                 duration = episode.itunes_duration
+
+            link = None
             if hasattr(episode, "links"):
                 for link in episode.links:
                     if link.type == 'audio/mpeg':
                         link = link.href
                         break
 
+            if link is None:
+                continue
+
+            subtitle = ""
+            if hasattr(episode, "subtitle"):
+                subtitle = episode.subtitle
+
             e = Episode(feed_id=feed.feed_id,
                         rss_episode_id=episode.id,
                         duration=duration,
                         link=link,
                         title=episode.title,
-                        subtitle=episode.subtitle,
+                        subtitle=subtitle,
                         description=episode.summary,
                         published=episode.published,
                         chapters=cs,
