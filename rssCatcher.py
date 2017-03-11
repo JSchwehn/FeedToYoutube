@@ -6,7 +6,6 @@ import sys
 from feed import Feed
 from episode import Episode
 from chapter import Chapter
-import pprint
 
 
 class RssCatcher:

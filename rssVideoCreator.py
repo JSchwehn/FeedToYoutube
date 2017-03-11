@@ -2,8 +2,6 @@ import configargparse
 from rssCatcher import RssCatcher
 from videoCreator import VideoCreator
 
-
-
 class RssVideoCreator:
     config = None
     db = None
@@ -24,6 +22,7 @@ class RssVideoCreator:
         p.add('-vh', '--video-height', help='Video height in pixels')
         p.add('-fps', '--video-fps', help='Video frames per seconds')
         p.add('-br', '--video-bitrate', help='Bitrate for the video')
+        p.add('-vbc', '--video-background-color', help='HTML Hex Color String e.g. #fefefe')
         p.add('-codec', '--video-codec', help='Video Codec')
         p.add('-audio-codec', '--audio-codec', help='Audio Codec')
         p.add('-db', '--db-name', help='Name of the local feed database')
@@ -36,13 +35,14 @@ class RssVideoCreator:
         p.add('-font', '--font', help='Path to a eot font file')
         p.add('-font-size-max', '--font-size-max', help='Max font size in px')
         p.add('-font-size-min', '--font-size-min', help='Min font size in px')
-        p.add('-font-color-red','--font-color-red', help='Font color red part 0-255')
-        p.add('-font-color-green','--font-color-green', help='Font color green part 0-255')
-        p.add('-font-color-blue','--font-color-blue', help='Font color blue part 0-255')
+        p.add('-font-color', '--font-color', help='HTML Color code e.g. #fefefe')
+        p.add('-font-color-subtitle', '--font-color-subtitle', help='HTML Hex Color String e.g. #fefefe')
         p.add('-title-pos-top', '--title-pos-top', help='Top position og the main title')
         p.add('-subtitle-pos-top', '--subtitle-pos-top', help='Top position og the main subtitle')
         p.add('-test', '--test', action='store_true', help='Do not render the whole movie, just 10 sec')
         p.add('-secret', '--yt_client_secrets_file', help='Youtube Secret JSON file')
+        p.add('-preview', '--preview', help='Render a single frame.')
+
 
         self.argparser = p
         self.config = p.parse_args()

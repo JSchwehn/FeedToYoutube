@@ -1,21 +1,33 @@
 # -*- coding: utf-8 -*-
-
-from PIL import Image, ImageFont, ImageDraw
-from hashlib import md5
+from multiprocessing import cpu_count
 import moviepy.editor as mpe
 from moviepy.tools import cvsecs
-
+from hashlib import md5
 import requests
 import os
 import sys
 from path import path
-from multiprocessing import Process, Queue, current_process, cpu_count
 import re
-from ytUpload import YtUploader
+#from ytUpload import YtUploader
+from imageProcessor import ImageProcessor
 
 
 class VideoCreator:
+
     nprocs = 4
+
+    @property
+    def image_processor(self):
+        return self.image_processor
+
+    @image_processor.setter
+    def image_processor(self, value):
+        self.image_processor = value
+
+    @image_processor.getter
+    def image_processor(self):
+        return self.image_processor
+
 
     @property
     def thread_count(self):
@@ -42,10 +54,16 @@ class VideoCreator:
         self.backgroundImage = value
 
     def run(self, feed):
+        """
+
+        :param feed:
+        :return:
+        """
         if not hasattr(feed, 'getNewEpisodes'):
             return None
 
         self.nprocs = cpu_count()
+        self.image_processor = ImageProcessor(self.config)
 
         new_episodes = feed.getNewEpisodes()
         for episode in new_episodes:
@@ -54,12 +72,20 @@ class VideoCreator:
             if not os.path.isfile(output):
                 print "Audio Link: " + episode.link
                 audio_clip = mpe.AudioFileClip(self.download(episode.link))
-                self.make_image1(episode)
+                self.image_processor.make_image1(episode)
+
                 self.createMovie(episode=episode, audioClip=audio_clip, output=output)
 
-            YtUploader(self.config).upload(output, episode)
+            #YtUploader(self.config).upload(output, episode)
 
     def get_chapter_duration(self, chapters, full_duration=None, idx=None):
+        """
+
+        :param chapters:
+        :param full_duration:
+        :param idx:
+        :return:
+        """
         start = cvsecs(chapters[idx].start)
         if idx is 0:
             start = 0
@@ -74,6 +100,13 @@ class VideoCreator:
         return duration
 
     def createMovie(self, episode=None, audioClip=None, output=None):
+        """
+
+        :param episode:
+        :param audioClip:
+        :param output:
+        :return:
+        """
         print " Creating Clips ..."
         if episode is None or audioClip is None:
             return None
@@ -106,6 +139,10 @@ class VideoCreator:
         self.cleanup()
 
     def cleanup(self):
+        """
+
+        :return:
+        """
         d = path(self.config.temp_path)
         for file in d.files('*.png'):
             file.remove()
@@ -115,8 +152,15 @@ class VideoCreator:
             print "Removed {}".format(file)
 
     def createClip(self, chapter, duration=10):
+        """
+        Creates small clips based on the chapter images.
+
+        :param chapter:
+        :param duration:
+        :return:
+        """
         filename = md5(chapter.title.encode('utf-8')).hexdigest()
-        img = 'tmp/' + filename + ".png"
+        img = self.config.temp_path + filename + ".png"
         if not os.path.isfile:
             print "File not found"
             return None
@@ -145,79 +189,6 @@ class VideoCreator:
                     sys.stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50 - done)))
                     sys.stdout.flush()
         return file_name
-
-    def get_dynamic_font_size(self, text, img, canvas_fraction=0.9):
-        font_size = int(self.config.font_size_min)
-        font = ImageFont.truetype(self.config.font, font_size)
-        while font.getsize(text)[0] < canvas_fraction * img.size[0]:
-            if font_size > int(self.config.font_size_max):
-                break
-            font_size += 1
-            font = ImageFont.truetype(self.config.font, font_size)
-        return font
-
-    def image_worker(self, episode_text, work_queue, done_queue):
-        try:
-            for chapter in iter(work_queue.get, 'STOP'):
-                filename = self.config.temp_path + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
-                img = Image.open(self.config.background_image)
-                self.draw_title(episode_text, img)
-                self.draw_chapter(chapter.title, img)
-                img.save(filename)
-                done_queue.put("%s - %s got %s." % (current_process().name, filename, filename))
-        except Exception, e:
-            filename = 'tmp/' + md5(chapter.title.encode('utf-8')).hexdigest() + '.png'
-            done_queue.put("%s failed on %s with: %s" % (current_process().name, filename, e.message))
-        return True
-
-    def make_image1(self, episode=None):
-        print "\t creating images for " + episode.title
-        # load background image
-        if hasattr(self.config, "background_image"):
-            jobs = []
-            workers = self.nprocs
-            work_queue = Queue()
-            done_queue = Queue()
-            for c in episode.chapters:
-                work_queue.put(c)
-
-            for w in xrange(workers):
-                p = Process(target=self.image_worker, args=(episode.title, work_queue, done_queue))
-                p.start()
-                jobs.append(p)
-                work_queue.put('STOP')
-
-            for p in jobs:
-                p.join()
-
-            done_queue.put('STOP')
-            for status in iter(done_queue.get, 'STOP'):
-                print status
-
-    def draw_title(self, episode_title, img):
-        if hasattr(self.config, "font"):
-            img_fraction_title = 0.8
-            font_size = int(self.config.font_size_min)
-            text_pos_top = (img.size[1] / 2) - font_size / 2
-            text_pos_top += int(self.config.title_pos_top)
-            self.draw_dynamic_centered_text(episode_title, img, img_fraction_title, font_size,
-                                            text_pos_top=text_pos_top)
-
-    def draw_chapter(self, chapter_title, img):
-        if hasattr(self.config, "font"):
-            img_fraction = 0.6  # todo -> config
-            font_size = int(self.config.font_size_min)  # todo -> config
-            text_pos_top = (img.size[1] / 2) - font_size / 2
-            text_pos_top += int(self.config.subtitle_pos_top)
-            self.draw_dynamic_centered_text(chapter_title, img, img_fraction, font_size, text_pos_top=text_pos_top)
-
-    def draw_dynamic_centered_text(self, text, img, img_fraction=0.9, min_font_size=18, text_pos_top=0):
-        if hasattr(self.config, "font"):
-            draw = ImageDraw.Draw(img)
-            dynamic_font = self.get_dynamic_font_size(text, img, canvas_fraction=img_fraction)
-            font_x_pos, font_y_pos = dynamic_font.getsize(text)
-            text_pos_left = (img.size[0] / 2) - font_x_pos / 2
-            draw.text((text_pos_left, text_pos_top), text, (128, 128, 128), font=dynamic_font)
 
     def slugify(self, value):
         """
