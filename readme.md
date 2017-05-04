@@ -2,7 +2,7 @@
  
 This is not even in a alpha state. 
 
-##Progress
+## Progress
 
 - [x] subscribe to given podcast feed
 - [x] extract data from rss feed
@@ -18,7 +18,7 @@ This is not even in a alpha state.
  
  
 
-##Usage
+## Usage
     usage: feedToYoutube.py [-h] -c MY_CONFIG [-f FEED [FEED ...]]
                             [-vw VIDEO_WIDTH] [-vh VIDEO_HEIGHT] [-fps VIDEO_FPS]
                             [-br VIDEO_RATE] [-codec VIDEO_CODEC] [-db DB_NAME]
@@ -90,7 +90,7 @@ This is not even in a alpha state.
 
 
 
-###Position the title and subtitle
+### Position the title and subtitle
 The default position is always the center of the screen. 
 So, if you want to move the title up the screen you must define a negative offset
 and if you want go under the middle line you have to set a positive offset.
